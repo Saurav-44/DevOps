@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Configuration
-REGION="${REGION:-$(aws configure get region)}"
-KEY_NAME="ubuntu-key"
+REGION="${REGION:-eu-north-1}"
+KEY_NAME="ubuntu-key5"
 KEY_FILE="$KEY_NAME.pem"
-SECURITY_GROUP_NAME="ubuntu-sg"
+SECURITY_GROUP_NAME="ubuntu-sg5"
 INSTANCE_TYPE="t3.micro"
 SCRIPT_FILE="setup.sh"
 
@@ -94,6 +94,17 @@ echo "Instance launched! ID: $INSTANCE_ID"
 # INSTANCE_ID=$(aws ec2 run-instances ... --output text | grep -o 'i-[a-zA-Z0-9]*')
 
 
+
+aws ec2 wait instance-running \
+  --region "$REGION" \
+  --instance-ids "$INSTANCE_ID"
+
+
+
+aws ec2 wait instance-status-ok \
+  --region "$REGION" \
+  --instance-ids "$INSTANCE_ID"
+
 # Step 7: Get public IP
 PUBLIC_IP=$(aws ec2 describe-instances \
   --region "$REGION" \
@@ -101,8 +112,9 @@ PUBLIC_IP=$(aws ec2 describe-instances \
   --query "Reservations[0].Instances[0].PublicIpAddress" \
   --output text)
 
+
 echo "Public IP: $PUBLIC_IP"
 echo "Connect using: ssh -i $KEY_FILE ubuntu@$PUBLIC_IP"
 
 echo "Sending $SCRIPT_FILE to EC2 instance at $PUBLIC_IP..."
-scp -i "$KEY_FILE" "$SCRIPT_FILE" ubuntu@"$PUBLIC_IP":~
+scp -o StrictHostKeyChecking=no -i "$KEY_FILE" "$SCRIPT_FILE" ubuntu@"$PUBLIC_IP":~
