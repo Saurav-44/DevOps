@@ -1,8 +1,8 @@
-#!/bin/bash
+!/bin/bash
 
 # Variables
-BUCKET_NAME="my-website-bucket-123456"
-REGION="us-east-1"
+BUCKET_NAME="my-website-bucket-123456721"
+REGION="eu-north-1"
 
 # Create S3 bucket
 aws s3api create-bucket --bucket $BUCKET_NAME --region $REGION --create-bucket-configuration LocationConstraint=$REGION
