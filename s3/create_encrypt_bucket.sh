@@ -1,9 +1,5 @@
-#!/bin/bash
-
-# Usage: ./create_encrypt_bucket.sh your-bucket-name
-
-BUCKET_NAME=$1
-REGION="us-east-1"  # change to your preferred AWS region
+BUCKET_NAME="bucket-43621"
+REGION="eu-north-1"  # change to your preferred AWS region
 
 if [ -z "$BUCKET_NAME" ]; then
   echo "Error: Please provide a bucket name."
@@ -23,9 +19,8 @@ fi
 
 # Enable default encryption on the bucket (AES-256)
 echo "Enabling default encryption on bucket: $BUCKET_NAME"
-aws s3api put-bucket-encryption --bucket "$BUCKET_NAME" --server-side-encryption-configuration '{{
-    "Rules": [{{"ApplyServerSideEncryptionByDefault": {{"SSEAlgorithm": "AES256"}}}}]
-}}'
+aws s3api put-bucket-encryption --bucket "$BUCKET_NAME" --server-side-encryption-configuration '{
+    "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
 
 if [ $? -eq 0 ]; then
   echo "Bucket created and encryption enabled successfully."
@@ -33,3 +28,4 @@ else
   echo "Failed to enable encryption."
   exit 1
 fi
+
