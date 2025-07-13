@@ -2,9 +2,9 @@
 
 # Configuration
 REGION="${REGION:-eu-north-1}"
-KEY_NAME="ubuntu-key5"
+KEY_NAME="ubuntu-key1"
 KEY_FILE="$KEY_NAME.pem"
-SECURITY_GROUP_NAME="ubuntu-sg5"
+SECURITY_GROUP_NAME="ubuntu-sg1"
 INSTANCE_TYPE="t3.micro"
 SCRIPT_FILE="setup.sh"
 
