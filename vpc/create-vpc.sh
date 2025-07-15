@@ -9,10 +9,15 @@ PRIVATE_SUBNET_CIDR="${PRIVATE_SUBNET_CIDR:-10.0.2.0/24}"
 AZ="${AZ:-${REGION}a}"
 TAG_NAME="${TAG_NAME:-MyVPC}"
 
-# Optional parameters for private EC2 launch
+# Dynamically fetch latest Amazon Linux 2 AMI for the region
+private_ami="${PRIVATE_AMI:-$(aws ec2 describe-images \
+    --region "$REGION" \
+    --owners amazon \
+    --filters 'Name=name,Values=amzn2-ami-hvm-2.0.*-x86_64-gp2' 'Name=state,Values=available' \
+    --query 'Images | sort_by(@, &CreationDate)[-1].ImageId' \
+    --output text)}"
 your_key_name="${KEY_NAME:-my-key-pair}"
 your_security_group_id="${SECURITY_GROUP_ID:-default}"
-private_ami="${PRIVATE_AMI:-ami-0c94855ba95c71c99}"  # Amazon Linux 2
 private_instance_type="${PRIVATE_INSTANCE_TYPE:-t2.micro}"
 
 # 1. Create the VPC
