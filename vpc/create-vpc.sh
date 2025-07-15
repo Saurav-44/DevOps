@@ -39,9 +39,40 @@ echo "Created public subnet: $PUBLIC_SUBNET_ID"
 echo "Created private subnet: $PRIVATE_SUBNET_ID"
 
 # 3. Internet Gateway and public route table
-IGW_ID=$(aws ec2 create-internet-gateway --region "$REGION" \
-  --query 'InternetGateway.InternetGatewayId' --output text)
-aws ec2 attach-internet-gateway --internet-gateway-id "$IGW_ID" --vpc-id "$VPC_ID" --region "$REGION"
+# Try to create a new Internet Gateway, but reuse one if the limit is exceeded
+if IGW_ID=$(aws ec2 create-internet-gateway --region "$REGION" \
+  --query 'InternetGateway.InternetGatewayId' --output text 2>&1); then
+  echo "Created Internet Gateway: $IGW_ID"
+else
+  # On limit error, find an unattached IGW to reuse
+  if echo "$IGW_ID" | grep -q InternetGatewayLimitExceeded; then
+    echo "InternetGatewayLimitExceeded: reusing an existing unattached IGW"
+    IGW_ID=$(aws ec2 describe-internet-gateways --region "$REGION" \
+      --filters Name=attachment.state,Values=available \
+      --query 'InternetGateways[0].InternetGatewayId' --output text)
+    echo "Reusing Internet Gateway: $IGW_ID"
+  else
+    echo "Failed to create or find IGW:"
+    echo "$IGW_ID" >&2
+    exit 1
+  fi
+fi
+
+# Attach the Internet Gateway to the VPC (if not already attached)
+ATTACHED=$(aws ec2 describe-internet-gateways --region "$REGION" \
+  --internet-gateway-ids "$IGW_ID" \
+  --query 'InternetGateways[0].Attachments[?VpcId==`'"$VPC_ID"'`]' \
+  --output text)
+
+if [ -z "$ATTACHED" ]; then
+  aws ec2 attach-internet-gateway --internet-gateway-id "$IGW_ID" \
+    --vpc-id "$VPC_ID" --region "$REGION"
+  echo "Attached Internet Gateway $IGW_ID to VPC $VPC_ID"
+else
+  echo "Internet Gateway $IGW_ID already attached to VPC $VPC_ID"
+fi
+
+# Tag the IGW and set up the public route table
 aws ec2 create-tags --resources "$IGW_ID" --tags Key=Name,Value="${TAG_NAME}-igw" --region "$REGION"
 
 RTB_ID=$(aws ec2 create-route-table --vpc-id "$VPC_ID" --region "$REGION" \
@@ -51,8 +82,8 @@ aws ec2 create-route --route-table-id "$RTB_ID" --destination-cidr-block 0.0.0.0
   --gateway-id "$IGW_ID" --region "$REGION"
 aws ec2 create-tags --resources "$RTB_ID" --tags Key=Name,Value="${TAG_NAME}-public-rt" --region "$REGION"
 aws ec2 modify-subnet-attribute --subnet-id "$PUBLIC_SUBNET_ID" --map-public-ip-on-launch --region "$REGION"
-
 echo "Configured public route table: $RTB_ID"
+
 
 
 # 4. Allocate Elastic IP for NAT Gateway (reuse or allocate)
