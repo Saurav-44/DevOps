@@ -1,7 +1,7 @@
 !/bin/bash
 
 # Variables
-BUCKET_NAME="my-website-bucket-123456721"
+BUCKET_NAME="mybucket44"
 REGION="eu-north-1"
 
 # Create S3 bucket
