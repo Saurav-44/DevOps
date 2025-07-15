@@ -12,8 +12,19 @@ TAG_NAME="${TAG_NAME:-MyVPC}"
 # Optional parameters for private EC2 launch
 your_key_name="${KEY_NAME:-my-key-pair}"
 your_security_group_id="${SECURITY_GROUP_ID:-default}"
-private_ami="${PRIVATE_AMI:-ami-0c94855ba95c71c99}"  # Amazon Linux 2
-private_instance_type="${PRIVATE_INSTANCE_TYPE:-t2.micro}"
+
+# Dynamic lookup for Ubuntu 22.04 AMI if not explicitly set
+private_ami="${PRIVATE_AMI:-$(aws ec2 describe-images \
+  --region "$REGION" \
+  --owners 099720109477 \
+  --filters Name=name,Values=ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-* Name=state,Values=available \
+  --query 'Images | sort_by(@,&CreationDate)[-1].ImageId' \
+  --output text)}"
+
+# Use a supported instance type in eu-north-1 (t3.micro)
+private_instance_type="${PRIVATE_INSTANCE_TYPE:-t3.micro}"
+
+echo "Using private AMI: $private_ami"
 
 # 1. Create the VPC
 VPC_ID=$(aws ec2 create-vpc --cidr-block "$VPC_CIDR" --region "$REGION" \
@@ -26,7 +37,6 @@ echo "Created VPC: $VPC_ID"
 PUBLIC_SUBNET_ID=$(aws ec2 create-subnet --vpc-id "$VPC_ID" \
   --cidr-block "$PUBLIC_SUBNET_CIDR" --availability-zone "$AZ" \
   --region "$REGION" --query 'Subnet.SubnetId' --output text)
-
 PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id "$VPC_ID" \
   --cidr-block "$PRIVATE_SUBNET_CIDR" --availability-zone "$AZ" \
   --region "$REGION" --query 'Subnet.SubnetId' --output text)
@@ -34,7 +44,6 @@ PRIVATE_SUBNET_ID=$(aws ec2 create-subnet --vpc-id "$VPC_ID" \
 aws ec2 create-tags --resources "$PUBLIC_SUBNET_ID" "$PRIVATE_SUBNET_ID" \
   --tags Key=Name,Value="${TAG_NAME}-public" Key=Name,Value="${TAG_NAME}-private" \
   --region "$REGION"
-
 echo "Created public subnet: $PUBLIC_SUBNET_ID"
 echo "Created private subnet: $PRIVATE_SUBNET_ID"
 
@@ -51,7 +60,6 @@ aws ec2 create-route --route-table-id "$RTB_ID" --destination-cidr-block 0.0.0.0
   --gateway-id "$IGW_ID" --region "$REGION"
 aws ec2 create-tags --resources "$RTB_ID" --tags Key=Name,Value="${TAG_NAME}-public-rt" --region "$REGION"
 aws ec2 modify-subnet-attribute --subnet-id "$PUBLIC_SUBNET_ID" --map-public-ip-on-launch --region "$REGION"
-
 echo "Configured public route table: $RTB_ID"
 
 # 4. Allocate Elastic IP and create NAT Gateway
@@ -63,7 +71,6 @@ NAT_GW_ID=$(aws ec2 create-nat-gateway --subnet-id "$PUBLIC_SUBNET_ID" --allocat
   --region "$REGION" --query 'NatGateway.NatGatewayId' --output text)
 aws ec2 wait nat-gateway-available --nat-gateway-ids "$NAT_GW_ID" --region "$REGION"
 aws ec2 create-tags --resources "$NAT_GW_ID" --tags Key=Name,Value="${TAG_NAME}-nat-gateway" --region "$REGION"
-
 echo "Created NAT Gateway: $NAT_GW_ID (EIP: $EIP_ALLOC_ID)"
 
 # 5. Private route table and route to NAT
@@ -73,29 +80,25 @@ aws ec2 associate-route-table --route-table-id "$PRIVATE_RTB_ID" --subnet-id "$P
 aws ec2 create-route --route-table-id "$PRIVATE_RTB_ID" --destination-cidr-block 0.0.0.0/0 \
   --nat-gateway-id "$NAT_GW_ID" --region "$REGION"
 aws ec2 create-tags --resources "$PRIVATE_RTB_ID" --tags Key=Name,Value="${TAG_NAME}-private-rt" --region "$REGION"
-
 echo "Configured private route table: $PRIVATE_RTB_ID"
 
 # 6. Launch an EC2 instance in the private subnet
 INSTANCE_ID=$(aws ec2 run-instances \
+  --region "$REGION" \
   --image-id "$private_ami" \
   --instance-type "$private_instance_type" \
   --subnet-id "$PRIVATE_SUBNET_ID" \
   --security-group-ids "$your_security_group_id" \
   --key-name "$your_key_name" \
-  --associate-public-ip-address false \
-  --region "$REGION" \
+  --no-associate-public-ip-address \
   --query 'Instances[0].InstanceId' --output text)
-
 aws ec2 create-tags --resources "$INSTANCE_ID" --tags Key=Name,Value="${TAG_NAME}-private-instance" --region "$REGION"
 aws ec2 wait instance-running --instance-ids "$INSTANCE_ID" --region "$REGION"
-
 echo "Launched private EC2 instance: $INSTANCE_ID"
 
-# 7. Check if instance has a public IP (reachability test)
+# 7. Check if instance has a public IP
 PUB_IP=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" --region "$REGION" \
   --query 'Reservations[0].Instances[0].PublicIpAddress' --output text || echo "None")
-
 if [ -z "$PUB_IP" ] || [ "$PUB_IP" = "None" ]; then
   echo "Instance $INSTANCE_ID has no public IP and is not reachable from the Internet."
 else
