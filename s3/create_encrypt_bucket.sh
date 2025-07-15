@@ -1,4 +1,4 @@
-BUCKET_NAME="bucket-43621"
+BUCKET_NAME="my-bucket-44"
 REGION="eu-north-1"  # change to your preferred AWS region
 
 if [ -z "$BUCKET_NAME" ]; then
