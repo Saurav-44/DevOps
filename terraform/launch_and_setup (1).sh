@@ -2,13 +2,13 @@
 set -euo pipefail
 
 ### === Configuration ===
-REGION="${REGION:-us-east-1}"
-AMI="${AMI:-ami-0c94855ba95c71c99}"          # change to Ubuntu AMI if desired
-INSTANCE_TYPE="${INSTANCE_TYPE:-t2.micro}"
-SUBNET_ID="${SUBNET_ID:-subnet-xxxxxxxx}"    # your public subnet ID
-SECURITY_GROUP_ID="${SECURITY_GROUP_ID:-sg-xxxxxxxx}"  # allows SSH (port 22)
-KEY_NAME="${KEY_NAME:-my-key-pair}"          # name of your EC2 key pair (without .pem)
-TERRAFORM_VERSION="${TERRAFORM_VERSION:-1.5.7}"
+REGION="${REGION:-eu-north-1}"
+AMI="${AMI:-ami-042b4708b1d05f512}"          # change to Ubuntu AMI if desired
+INSTANCE_TYPE="${INSTANCE_TYPE:-t3.micro}"
+SUBNET_ID="${SUBNET_ID:-subnet-0b7ef0d49337481ea}"    # your public subnet ID
+SECURITY_GROUP_ID="${SECURITY_GROUP_ID:-sgr-00ef00dbd9fd0070e}"  # allows SSH (port 22)
+KEY_NAME="${KEY_NAME:-public-key}"          # name of your EC2 key pair (without .pem)
+TERRAFORM_VERSION="${TERRAFORM_VERSION:-1.8.5}"
 
 ### === 1. Launch the EC2 instance ===
 echo "Launching instance in subnet ${SUBNET_ID}..."
