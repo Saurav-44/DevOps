@@ -1,6 +1,6 @@
-cat << 'EOF' > setup_vpc.sh
+
 #!/bin/bash
-set -euo pipefail
+
 
 # Configuration (override via env vars)
 REGION="\${REGION:-eu-north-1}"
