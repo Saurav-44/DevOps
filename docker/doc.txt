@@ -1,9 +1,5 @@
-#!/bin/bash
-
-sudo apt update
-sudo apt install -y docker.io mysql-server
-sudo systemctl start docker
-sudo systemctl enable docker
-
-sudo systemctl start mysql
-sudo mysql -e "CREATE DATABASE demo_db; SHOW DATABASES;"
+docker build -t my-app .
+docker tag my-app your_dockerhub_username/my-app:latest
+docker login
+docker push your_dockerhub_username/my-app:latest
+docker images
