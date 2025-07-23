@@ -1,21 +1,9 @@
-variable "bucket_name" {
+output "bucket_name" {
   description = "The name of the S3 bucket"
-  type        = string
+  value       = aws_s3_bucket.this.bucket
 }
 
-variable "acl" {
-  description = "Canned ACL to apply"
-  type        = string
-  default     = "private"
-}
-
-variable "tags" {
-  description = "Tags to apply to the bucket"
-  type        = map(string)
-  default     = {}
-}
-
-variable "region" {
-  description = "AWS region where the bucket will be created"
-  type        = string
+output "bucket_arn" {
+  description = "The ARN of the S3 bucket"
+  value       = aws_s3_bucket.this.arn
 }
