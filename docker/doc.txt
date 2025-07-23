@@ -1,26 +1,14 @@
 #!/bin/bash
 
-# Update and install Docker
-sudo apt update -y
-sudo apt install -y docker.io git
+VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query "Vpc.VpcId" --output text)
+aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=MyVPC
 
-# Start and enable Docker
-sudo systemctl start docker
-sudo systemctl enable docker
+SUBNET_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --output text --query 'Subnet.SubnetId')
+IGW_ID=$(aws ec2 create-internet-gateway --query "InternetGateway.InternetGatewayId" --output text)
+aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID
 
-# Clone the Docker Getting Started app
-git clone https://github.com/Saurav-44/DevOps.git
-cd DevOps/docker
+RT_ID=$(aws ec2 create-route-table --vpc-id $VPC_ID --query "RouteTable.RouteTableId" --output text)
+aws ec2 create-route --route-table-id $RT_ID --destination-cidr-block 0.0.0.0/0 --gateway-id $IGW_ID
+aws ec2 associate-route-table --route-table-id $RT_ID --subnet-id $SUBNET_ID
 
-# Build Docker image
-docker build -t myapp .
-
-# Tag the image (replace 'your_dockerhub_username' below)
-docker tag myapp your_dockerhub_username/myapp:latest
-
-# Login to Docker Hub
-docker login
-
-# Push image to Docker Hub
-docker push your_dockerhub_username/myapp:latest
-
+echo "VPC and subnet setup done."
