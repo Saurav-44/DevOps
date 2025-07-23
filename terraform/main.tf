@@ -1,4 +1,5 @@
-output "instance_public_ip" {
-  description = "Public IP of EC2 instance"
-  value       = aws_instance.nginx.public_ip
+variable "region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "eu-north-1" # or leave out default and pass in tfvars
 }
