@@ -1,5 +1,7 @@
-docker build -t my-app .
-docker tag my-app your_dockerhub_username/my-app:latest
-docker login
-docker push your_dockerhub_username/my-app:latest
-docker images
+#!/bin/bash
+sudo apt update
+sudo apt install -y docker.io
+sudo docker pull httpd
+echo "<h1>Welcome to Apache - YourName</h1>" > index.html
+sudo docker run -d -p 80:80 -v $(pwd)/index.html:/usr/local/apache2/htdocs/index.html httpd
+
