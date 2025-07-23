@@ -1,31 +1,21 @@
-provider "aws" {
-  region = var.region
+variable "bucket_name" {
+  description = "The name of the S3 bucket"
+  type        = string
 }
 
-resource "aws_s3_bucket" "this" {
-  bucket = var.bucket_name
-  acl    = var.acl
-
-  tags = var.tags
+variable "acl" {
+  description = "Canned ACL to apply"
+  type        = string
+  default     = "private"
 }
 
-resource "aws_s3_bucket_policy" "this" {
-  bucket = aws_s3_bucket.this.id
-  policy = data.aws_iam_policy_document.s3_policy.json
+variable "tags" {
+  description = "Tags to apply to the bucket"
+  type        = map(string)
+  default     = {}
 }
 
-data "aws_iam_policy_document" "s3_policy" {
-  statement {
-    sid    = "AllowPublicRead"
-    effect = "Allow"
-
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
-
-    actions = ["s3:GetObject"]
-
-    resources = ["${aws_s3_bucket.this.arn}/*"]
-  }
+variable "region" {
+  description = "AWS region where the bucket will be created"
+  type        = string
 }
