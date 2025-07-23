@@ -9,8 +9,8 @@ sudo systemctl start docker
 sudo systemctl enable docker
 
 # Clone the Docker Getting Started app
-git clone https://github.com/docker/getting-started.git
-cd getting-started
+git clone https://github.com/Saurav-44/DevOps.git
+cd DevOps/docker
 
 # Build Docker image
 docker build -t myapp .
