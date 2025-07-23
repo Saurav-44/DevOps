@@ -1,1 +1,26 @@
+#!/bin/bash
+
+# Update and install Docker
+sudo apt update -y
+sudo apt install -y docker.io git
+
+# Start and enable Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Clone the Docker Getting Started app
+git clone https://github.com/docker/getting-started.git
+cd getting-started
+
+# Build Docker image
+docker build -t myapp .
+
+# Tag the image (replace 'your_dockerhub_username' below)
+docker tag myapp your_dockerhub_username/myapp:latest
+
+# Login to Docker Hub
+docker login
+
+# Push image to Docker Hub
+docker push your_dockerhub_username/myapp:latest
 
