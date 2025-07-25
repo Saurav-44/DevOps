@@ -1,10 +1,10 @@
 #!/bin/bash
 
-REGION="eu-north-1"         # set your region
-INSTANCE_ID="i-0195d5b5b6d08caec"  # Replace with your EC2 instance ID from previous step
-TOPIC_ARN="arn:aws:sns:eu-north-1:349854929230:HighCPUAlarmTopic_1752657345"  # Replace with your SNS Topic ARN
+REGION="eu-north-1"
+INSTANCE_ID="i-09caf5ed48c36c7f7"  # Replace with your actual EC2 instance ID
+TOPIC_ARN="arn:aws:sns:eu-north-1:349854929230:HighCPUAlarmTopic_1752657345"  # Replace with your SNS topic ARN
 
-# Alarms definitions (name, metric, threshold, comparison)
+# Alarms definitions (name, metric, threshold, comparison, stat)
 declare -A alarms=(
   ["CPUUtilizationHigh"]="CPUUtilization GreaterThanThreshold 70 Average"
   ["StatusCheckFailed"]="StatusCheckFailed_Instance GreaterThanOrEqualToThreshold 1 Maximum"
@@ -27,61 +27,48 @@ for alarm in "${!alarms[@]}"; do
     --threshold "$threshold" \
     --comparison-operator "$comparison" \
     --evaluation-periods 1 \
-    --dimensions Name=InstanceId,Value=$INSTANCE_ID \
-    --alarm-actions $TOPIC_ARN \
-    --region $REGION
-  
-  echo "Alarm $alarm created."
+    --alarm-actions "$TOPIC_ARN" \
+    --dimensions "Name=InstanceId,Value=$INSTANCE_ID" \
+    --region "$REGION"
+
 done
+
+# Fetch alarm ARNs
+echo "Fetching alarm ARNs for dashboard..."
+
+declare -a alarm_arns=()
+for alarm in "${!alarms[@]}"; do
+  arn=$(aws cloudwatch describe-alarms \
+    --alarm-names "$alarm-$INSTANCE_ID" \
+    --query "MetricAlarms[0].AlarmArn" \
+    --output text \
+    --region "$REGION")
+  alarm_arns+=("\"$arn\"")
+done
+
+# Create CloudWatch Dashboard JSON
+cat > dashboard.json <<EOF
+{
+  "widgets": [
+    {
+      "type": "alarm",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "alarms": [${alarm_arns[*]}]
+      }
+    }
+  ]
+}
+EOF
 
 echo "Creating CloudWatch dashboard..."
 
-DASHBOARD_NAME="EC2InstanceAlarms-$INSTANCE_ID"
-DASHBOARD_BODY=$(cat <<EOF
-{
-  "widgets": [
-    {
-      "type": "alarm",
-      "x": 0,
-      "y": 0,
-      "width": 24,
-      "height": 6,
-      "properties": {
-        "alarms": [
-          "$(printf '%s-%s",' "${!alarms[@]}" "$INSTANCE_ID" | sed 's/,$//')"
-        ],
-        "title": "EC2 Instance Alarms"
-      }
-    }
-  ]
-}
-EOF
-)
+aws cloudwatch put-dashboard \
+  --dashboard-name "MyEC2Dashboard" \
+  --dashboard-body file://dashboard.json \
+  --region "$REGION"
 
-# Fix alarms array in dashboard JSON with correct alarm names
-ALARM_NAMES_JSON=$(printf '"%s-%s",' "${!alarms[@]}" "$INSTANCE_ID" | sed 's/,$//')
-DASHBOARD_BODY=$(cat <<EOF
-{
-  "widgets": [
-    {
-      "type": "alarm",
-      "x": 0,
-      "y": 0,
-      "width": 24,
-      "height": 6,
-      "properties": {
-        "alarms": [
-          $ALARM_NAMES_JSON
-        ],
-        "title": "EC2 Instance Alarms"
-      }
-    }
-  ]
-}
-EOF
-)
-
-aws cloudwatch put-dashboard --dashboard-name $DASHBOARD_NAME --dashboard-body "$DASHBOARD_BODY" --region $REGION
-
-echo "Dashboard $DASHBOARD_NAME created successfully."
-
+echo "✅ Script completed successfully."
