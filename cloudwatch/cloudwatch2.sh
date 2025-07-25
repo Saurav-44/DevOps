@@ -1,7 +1,7 @@
 #!/bin/bash
 
 REGION="eu-north-1"
-INSTANCE_ID="i-09caf5ed48c36c7f7"  # Replace with your actual EC2 instance ID
+INSTANCE_ID="i-0195d5b5b6d08caec"  # Replace with your EC2 instance ID
 TOPIC_ARN="arn:aws:sns:eu-north-1:349854929230:HighCPUAlarmTopic_1752657345"  # Replace with your SNS topic ARN
 
 # Alarms definitions (name, metric, threshold, comparison, stat)
@@ -17,7 +17,7 @@ echo "Creating CloudWatch alarms..."
 
 for alarm in "${!alarms[@]}"; do
   read -r metric comparison threshold stat <<< "${alarms[$alarm]}"
-  
+
   aws cloudwatch put-metric-alarm \
     --alarm-name "$alarm-$INSTANCE_ID" \
     --metric-name "$metric" \
@@ -27,15 +27,16 @@ for alarm in "${!alarms[@]}"; do
     --threshold "$threshold" \
     --comparison-operator "$comparison" \
     --evaluation-periods 1 \
+    --dimensions Name=InstanceId,Value=$INSTANCE_ID \
     --alarm-actions "$TOPIC_ARN" \
-    --dimensions "Name=InstanceId,Value=$INSTANCE_ID" \
     --region "$REGION"
 
+  echo "Alarm $alarm created."
 done
 
-# Fetch alarm ARNs
 echo "Fetching alarm ARNs for dashboard..."
 
+# Fetch ARNs
 declare -a alarm_arns=()
 for alarm in "${!alarms[@]}"; do
   arn=$(aws cloudwatch describe-alarms \
@@ -46,7 +47,14 @@ for alarm in "${!alarms[@]}"; do
   alarm_arns+=("\"$arn\"")
 done
 
-# Create CloudWatch Dashboard JSON
+# Join ARNs for JSON
+joined_arns=$(IFS=, ; echo "${alarm_arns[*]}")
+
+echo "Creating CloudWatch dashboard..."
+
+DASHBOARD_NAME="EC2InstanceAlarms-$INSTANCE_ID"
+
+# Create dashboard JSON body
 cat > dashboard.json <<EOF
 {
   "widgets": [
@@ -57,18 +65,18 @@ cat > dashboard.json <<EOF
       "width": 24,
       "height": 6,
       "properties": {
-        "alarms": [${alarm_arns[*]}]
+        "alarms": [$joined_arns],
+        "title": "EC2 Instance Alarms"
       }
     }
   ]
 }
 EOF
 
-echo "Creating CloudWatch dashboard..."
-
+# Push dashboard
 aws cloudwatch put-dashboard \
-  --dashboard-name "MyEC2Dashboard" \
+  --dashboard-name "$DASHBOARD_NAME" \
   --dashboard-body file://dashboard.json \
   --region "$REGION"
 
-echo "✅ Script completed successfully."
+echo "✅ Dashboard $DASHBOARD_NAME created successfully."
