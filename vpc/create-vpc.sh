@@ -1,14 +1,24 @@
-output "frontend_public_ip" {
-  description = "Public IP of the frontend instance"
-  value       = aws_instance.frontend.public_ip
-}
+#!/usr/bin/env bash
+set -euo pipefail
 
-output "frontend_public_dns" {
-  description = "Public DNS of the frontend instance"
-  value       = aws_instance.frontend.public_dns
-}
+cd terraform
 
-output "backend_private_ip" {
-  description = "Private IP of the backend instance"
-  value       = aws_instance.backend.private_ip
-}
+echo "=== Stage 1: Create infra & deploy apps via Terraform provisioners ==="
+terraform init
+terraform apply -auto-approve
+
+echo
+echo "=== Stage 2: Testing solution ==="
+# Fetch frontend IP:
+FR_IP=$(terraform output -raw frontend_public_ip)
+echo "Frontend is live at: http://$FR_IP"
+
+# Simple health‐check:
+echo -n "curl result: "
+curl -s http://$FR_IP | head -n1
+
+# Save outputs to a file:
+terraform output > ../terraform-outputs.txt
+
+echo
+echo "✅ Deployment complete. Outputs saved to terraform-outputs.txt"
