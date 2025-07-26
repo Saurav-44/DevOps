@@ -1,14 +1,21 @@
-#!/usr/bin/env bash
-set -euo pipefail
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
 
-# from app/scripts → go build & push the backend
-cd ../backend
-docker build -t saurav445/node-mysql-backend:latest .
-docker push saurav445/node-mysql-backend:latest
-
-# now build & push the frontend
-cd ../frontend
-docker build -t saurav445/simple-frontend:latest .
-docker push saurav445/simple-frontend:latest
-
-echo "✅ Images built & pushed successfully."
