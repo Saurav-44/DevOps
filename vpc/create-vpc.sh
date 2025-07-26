@@ -1,6 +1,9 @@
-output "frontend_public_ip" {
-  value = aws_instance.frontend.public_ip
-}
-output "backend_private_ip" {
-  value = aws_instance.backend.private_ip
-}
+#!/usr/bin/env bash
+set -e
+
+pushd infra
+  terraform init
+  terraform apply -auto-approve \
+    -var="key_name=${KEY_NAME:-k-pair}" \
+    -var="region=${AWS_REGION:-eu-north-1}"
+popd
