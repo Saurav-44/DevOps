@@ -1,24 +1,18 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Installs Docker, pulls your Node.js/MySQL backend image, and runs it.
 
-cd terraform
+# 1. Install Docker & CLI
+yum update -y
+amazon-linux-extras install docker -y
+service docker start
+usermod -a -G docker ec2-user
 
-echo "=== Stage 1: Create infra & deploy apps via Terraform provisioners ==="
-terraform init
-terraform apply -auto-approve
-
-echo
-echo "=== Stage 2: Testing solution ==="
-# Fetch frontend IP:
-FR_IP=$(terraform output -raw frontend_public_ip)
-echo "Frontend is live at: http://$FR_IP"
-
-# Simple health‐check:
-echo -n "curl result: "
-curl -s http://$FR_IP | head -n1
-
-# Save outputs to a file:
-terraform output > ../terraform-outputs.txt
-
-echo
-echo "✅ Deployment complete. Outputs saved to terraform-outputs.txt"
+# 2. Run backend container (listens on 3000)
+docker pull $1/node-mysql-backend:latest
+docker run -d \
+  --name backend \
+  -e MYSQL_HOST=localhost \
+  -e MYSQL_USER=root \
+  -e MYSQL_PASSWORD=pass123 \
+  -e MYSQL_DATABASE=userdata \
+  $1/node-mysql-backend:latest
