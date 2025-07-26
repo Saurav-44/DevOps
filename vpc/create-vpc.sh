@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
-pushd infra
-  terraform init
-  terraform apply -auto-approve \
-    -var="key_name=${KEY_NAME:-k-pair}" \
-    -var="region=${AWS_REGION:-eu-north-1}"
-popd
+# 1. install Docker
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl enable --now docker
+
+# 2. pull & run your frontend image
+docker pull YOUR_DOCKERHUB_USER/frontend:latest
+docker run -d --name frontend \
+  -p 8080:8080 \
+  YOUR_DOCKERHUB_USER/frontend:latest
