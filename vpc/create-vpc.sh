@@ -1,13 +1,15 @@
-# From project root:
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 1. Backend (Node.js + MySQL)
-cd app/backend
-docker build -t <YOUR_DOCKERHUB_USER>/node-mysql-backend:latest .
-docker push <YOUR_DOCKERHUB_USER>/node-mysql-backend:latest
+# from app/scripts:
+cd ../backend
+docker build -t saurav123/node-mysql-backend:latest .
+docker push saurav123/node-mysql-backend:latest
 
-# 2. Frontend (static HTML + simple JS form)
 cd ../frontend
-docker build -t <YOUR_DOCKERHUB_USER>/simple-frontend:latest .
-docker push <YOUR_DOCKERHUB_USER>/simple-frontend:latest
+docker build -t saurav123/simple-frontend:latest .
+docker push saurav123/simple-frontend:latest
 
+# back to project root
 cd ../../
+
