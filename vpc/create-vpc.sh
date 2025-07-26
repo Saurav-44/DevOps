@@ -1,47 +1,35 @@
-const express    = require('express');
-const bodyParser = require('body-parser');
-const mysql      = require('mysql2');
-
-const app = express();
-app.use(bodyParser.json());
-const port = 3000;
-
-// Connect to MySQL (running in same container)
-const db = mysql.createConnection({
-  host:     process.env.MYSQL_HOST || 'localhost',
-  user:     process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || 'pass123',
-  database: process.env.MYSQL_DATABASE || 'userdata'
-});
-
-// initialize table
-db.execute(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100)
-  )
-`);
-
-app.post('/api/users', (req, res) => {
-  const { name, email } = req.body;
-  db.execute(
-    'INSERT INTO users (name, email) VALUES (?, ?)',
-    [name, email],
-    (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: result.insertId, name, email });
-    }
-  );
-});
-
-app.get('/api/users', (req, res) => {
-  db.execute('SELECT * FROM users', (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
-});
-
-app.listen(port, () => {
-  console.log(`Backend listening on port ${port}`);
-});
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Simple Frontend</title>
+</head>
+<body>
+  <h1>User Registration</h1>
+  <form id="userForm">
+    <input type="text" id="name" placeholder="Name" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <button type="submit">Submit</button>
+  </form>
+  <pre id="result"></pre>
+  <script>
+    const form = document.getElementById('userForm');
+    const result = document.getElementById('result');
+    const api = `${window.location.origin.replace(/:[0-9]+$/, '')}:3000/api/users`;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      fetch(api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:  document.getElementById('name').value,
+          email: document.getElementById('email').value
+        })
+      })
+      .then(r => r.json())
+      .then(json => result.textContent = JSON.stringify(json, null, 2))
+      .catch(err => result.textContent = err);
+    });
+  </script>
+</body>
+</html>
