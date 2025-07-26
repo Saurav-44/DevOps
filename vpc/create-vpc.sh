@@ -31,14 +31,14 @@ resource "aws_route_table_association" "public_assoc" {
 # 3 EC2 instances
 resource "aws_instance" "frontend" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   subnet_id     = aws_subnet.public.id
   key_name      = var.key_name
   tags = { Name = "FRONTEND" }
 }
 resource "aws_instance" "backend" {
   ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.micro"
+  instance_type = "t3.micro"
   subnet_id     = aws_subnet.private.id
   key_name      = var.key_name
   tags = { Name = "BACKEND" }
