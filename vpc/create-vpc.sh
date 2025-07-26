@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Installs Docker, pulls your Node.js/MySQL backend image, and runs it.
+# Installs Docker, pulls your static‐frontend image, and injects backend IP.
 
-# 1. Install Docker & CLI
+BACKEND_IP=$1
+DH_USER=$2
+
 yum update -y
 amazon-linux-extras install docker -y
 service docker start
 usermod -a -G docker ec2-user
 
-# 2. Run backend container (listens on 3000)
-docker pull $1/node-mysql-backend:latest
+# Pull & run, passing backend URL as env var:
+docker pull $DH_USER/simple-frontend:latest
 docker run -d \
-  --name backend \
-  -e MYSQL_HOST=localhost \
-  -e MYSQL_USER=root \
-  -e MYSQL_PASSWORD=pass123 \
-  -e MYSQL_DATABASE=userdata \
-  $1/node-mysql-backend:latest
+  --name frontend \
+  -p 80:80 \
+  -e BACKEND_URL="http://$BACKEND_IP:3000" \
+  $DH_USER/simple-frontend:latest
