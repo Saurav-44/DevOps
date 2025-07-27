@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>User Entry Form</h2>
+    <form id="userForm">
+      <input type="text" id="name" placeholder="Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <button type="submit">Submit</button>
+    </form>
+    <div id="result"></div>
+    <script>
+      document.getElementById('userForm').onsubmit = async function(e){
+        e.preventDefault();
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const response = await fetch("http://BACKEND_PRIVATE_IP:3000/user", {
+          method: "POST",
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name, email })
+        });
+        document.getElementById('result').innerText = await response.text();
+      };
+    </script>
+  </body>
+</html>
